@@ -4,3 +4,13 @@ Functionality is being added bit by bit, so check back (or, better yet, contribu
 
 ## Installation
 Install with `pip install .`
+If you are developing this package and would like to avoid running this after every change, instead use `pip install -e .` to create a link back to this directory. 
+
+## Basic Usage
+
+To create a pico reader instance:
+```
+import pico_reader
+reader = pico_reader.PicoDST()
+reader.import_data("path_to_picoDST")
+```
