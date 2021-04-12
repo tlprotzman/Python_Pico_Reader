@@ -9,26 +9,14 @@
 # /
 
 # Not all these are used right now.
-import os
 import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.colors as colors
-from pathlib import Path
-import seaborn as sns
-from scipy.optimize import curve_fit
-from scipy.signal import argrelextrema as arex
-from scipy.signal import savgol_filter as sgf
-from scipy.stats import skew, kurtosis
 import uproot as up
 import awkward as ak
-import time
-import logging
 
 # Speed of light, in m/s
-c = 299792458
+SPEED_OF_LIGHT = 299792458
 # Proton mass, in GeV
-mp = 0.9382720813
+PROTON_MASS = 0.9382720813
 
 
 def index_cut(a, *args):
@@ -39,8 +27,8 @@ def index_cut(a, *args):
 
 # TODO Check to see that these results are reasonable. Graph against p_t.
 def rapidity(p_z):
-    e_p = np.power(np.add(mp**2, np.power(p_z, 2)), 1/2)
-    e_m = np.subtract(mp**2, np.power(p_z, 2))
+    e_p = np.power(np.add(PROTON_MASS**2, np.power(p_z, 2)), 1/2)
+    e_m = np.subtract(PROTON_MASS**2, np.power(p_z, 2))
     e_m = ak.where(e_m < 0.0, 0.0, e_m)  # to avoid imaginary numbers
     e_m = np.power(e_m, 1/2)
     e_m = ak.where(e_m == 0.0, 1e-10, e_m)  # to avoid infinities
@@ -52,7 +40,7 @@ class PicoDST:
     """This class makes the PicoDST from the root file, along with
     all of the observables I use for proton kurtosis analysis."""
 
-    def __init__(self):
+    def __init__(self, data_file=None):
         """This defines the variables we'll be using
         in the class."""
         self.data: bool
@@ -85,6 +73,8 @@ class PicoDST:
         self.dedx_histo = None
         self.p_g_histo = None
         self.charge_histo = None
+        if data_file is not None:
+            self.import_data(data_file)
 
     def import_data(self, data_in):
         """This imports the data. You must have the latest versions
