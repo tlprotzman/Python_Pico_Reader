@@ -136,3 +136,6 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+
+# I need to find out if it is okay to share these publically
+tests/st_physics_21250020_raw_6500001.picoDst.root

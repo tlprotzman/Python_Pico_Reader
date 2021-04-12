@@ -40,7 +40,7 @@ class PicoDST:
     """This class makes the PicoDST from the root file, along with
     all of the observables I use for proton kurtosis analysis."""
 
-    def __init__(self, data_file):
+    def __init__(self, data_file=None):
         """This defines the variables we'll be using
         in the class."""
         self.data: bool
@@ -73,7 +73,8 @@ class PicoDST:
         self.dedx_histo = None
         self.p_g_histo = None
         self.charge_histo = None
-        self.import_data(data_file)
+        if data_file is not None:
+            self.import_data(data_file)
 
     def import_data(self, data_in):
         """This imports the data. You must have the latest versions
