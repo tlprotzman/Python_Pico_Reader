@@ -37,6 +37,7 @@ def rapidity(p_z):
 
 
 class EPD_Hits:
+
     mID = None
     mQT_data = None
     mnMip = None
@@ -81,6 +82,10 @@ class EPD_Hits:
             ring_sum[i] = ring_i
         return ring_sum
 
+class EPD_Hit(EPD_Hits):
+    def __init__(self, hits, index):
+        for attr in [a for a in dir(hits) if not a.startswith('__') and not callable(getattr(hits, a))]:
+            print(attr)
 
 class PicoDST:
     """This class makes the PicoDST from the root file, along with
