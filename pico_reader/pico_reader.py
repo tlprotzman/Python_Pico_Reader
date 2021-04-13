@@ -35,6 +35,40 @@ def rapidity(p_z):
     y = np.multiply(np.log(np.divide(e_p, e_m)), 1/2)
     return y
 
+class EPD_Hits:
+    mID = None
+    mQT_data = None
+    mnMip = None
+
+    position = None          # Supersector position on wheel [1, 12]
+    tile = None              # Tile number on the Supersector [1, 31]
+    EW = None                # -1 for East wheel, +1 for West wheel
+    ADC = None               # ADC Value reported by QT board [0, 4095]
+    TAC = None               # TAC value reported by QT board[0, 4095]
+    TDC = None               # TDC value reported by QT board[0, 32]
+    has_TAC = None           # channel has a TAC
+    nMip = None              # gain calibrated signal, energy loss in terms of MPV of Landau for a MIP, might be an int, need to check.
+    status_is_good = None    # good status, according to database
+
+    def __init__(self, mID, mQT_data, mnMips):
+        self.mID = mID
+        self.mQT_data = mQT_data
+        self.mnMip = mnMips
+
+        self.has_TAC = np.bitwise_and(np.right_shift(self.mQT_data, 29), 0x1)
+        self.status_is_good = np.bitwise_and(np.right_shift(self.mQT_data, 30),  0x1)
+
+        self.adc = np.bitwise_and(self.mQT_data, 0x0FFF)
+        self.tac = np.bitwise_and(np.right_shift(self.mQT_data, 12), 0x0FFF)
+        self.TDC = np.bitwise_and(np.right_shift(self.mQT_data, 24), 0x001F)
+
+        self.EW = np.sign(self.mID)
+        self.position = np.abs(self.mID // 100)
+        self.tile = np.abs(self.mID % 100)
+        self.nMip = np.where(self.status_is_good, self.mnMip, 0)
+
+
+
 
 class PicoDST:
     """This class makes the PicoDST from the root file, along with
@@ -73,6 +107,9 @@ class PicoDST:
         self.dedx_histo = None
         self.p_g_histo = None
         self.charge_histo = None
+        self.epd_hits = None
+
+
         if data_file is not None:
             self.import_data(data_file)
 
@@ -137,6 +174,13 @@ class PicoDST:
             o_x = data["Track"]["Track.mOriginX"].array()
             o_y = data["Track"]["Track.mOriginY"].array()
             self.phi = np.arctan2(o_y, o_x)
+
+            # Load EPD Data
+            # I am worried about flattening this data, I need to understand the structure better to figure out how to keep events associated properly
+            epd_hit_id_data = ak.to_numpy(ak.flatten(data["EpdHit"]["EpdHit.mId"].array()))
+            epd_hit_mQTdata = ak.to_numpy(ak.flatten(data["EpdHit"]["EpdHit.mQTdata"].array()))
+            epd_hit_mnMIP   = ak.to_numpy(ak.flatten(data["EpdHit"]["EpdHit.mnMIP"].array()))
+            self.epd_hits = EPD_Hits(epd_hit_id_data, epd_hit_mQTdata, epd_hit_mnMIP)
 
             # print("PicoDst " + data_in[-13:-5] + " loaded.")
 
