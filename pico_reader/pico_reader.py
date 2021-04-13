@@ -49,10 +49,10 @@ class EPD_Hits:
     TAC = None               # TAC value reported by QT board[0, 4095]
     TDC = None               # TDC value reported by QT board[0, 32]
     has_TAC = None           # channel has a TAC
-    nMip = None              # gain calibrated signal, energy loss in terms of MPV of Landau for a MIP, might be an int, need to check.
+    nMip = None              # gain calibrated signal, energy loss in terms of MPV of Landau convolution for a MIP
     status_is_good = None    # good status, according to database
 
-    def __init__(self, mID, mQT_data, mnMips):
+    def __init__(self, mID, mQT_data, mnMips, lower_bound=0.2, upper_bound=3):
         self.mID = mID
         self.mQT_data = mQT_data
         self.mnMip = mnMips
@@ -68,21 +68,17 @@ class EPD_Hits:
         self.position = np.abs(self.mID // 100)
         self.tile = np.abs(self.mID) % 100
         self.row = np.abs(mID) % 100 // 2 + 1
-        self.nMip = np.where(self.status_is_good, self.mnMip, 0)
+        self.nMip = ak.where(self.status_is_good, self.mnMip, 0)
+        # nMIP truncation
+        self.nMip = ak.where(self.nMip <= lower_bound, lower_bound, self.nMip)
+        self.nMip = ak.where(self.nMip >= upper_bound, upper_bound, self.nMip)
 
-    # TODO Parallelize?
-    def generate_epd_hit_matrix(self, lower_bound = 0.2, upper_bound = 3):
-        ring_sum = np.zeros((16, len(self.nMip)))
+    def generate_epd_hit_matrix(self):
+        ring_sum = np.zeros((32, len(self.nMip)))
         print("Filling array of dimension", ring_sum.shape)
-        for i in range(len(self.nMip)):
-            for j in range(len(self.nMip[i])):
-                # print(self.row[i][j] - 1)
-                addition = self.nMip[i][j]
-                if addition < lower_bound:
-                    addition = 0
-                if addition > upper_bound:
-                    addition = upper_bound
-                ring_sum[self.row[i][j] - 1][i] += addition
+        for i in range(32):
+            ring_i = ak.sum(ak.where(self.row == i+1, self.nMip, 0), axis=-1)
+            ring_sum[i] = ring_i
         return ring_sum
 
 
@@ -125,7 +121,6 @@ class PicoDST:
         self.p_g_histo = None
         self.charge_histo = None
         self.epd_hits = None
-
 
         if data_file is not None:
             self.import_data(data_file)
