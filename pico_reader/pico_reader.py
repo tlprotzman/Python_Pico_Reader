@@ -42,6 +42,7 @@ class EPD_Hits:
 
     position = None          # Supersector position on wheel [1, 12]
     tile = None              # Tile number on the Supersector [1, 31]
+    row = None               # Row Number [1, 16]
     EW = None                # -1 for East wheel, +1 for West wheel
     ADC = None               # ADC Value reported by QT board [0, 4095]
     TAC = None               # TAC value reported by QT board[0, 4095]
@@ -64,8 +65,29 @@ class EPD_Hits:
 
         self.EW = np.sign(self.mID)
         self.position = np.abs(self.mID // 100)
-        self.tile = np.abs(self.mID % 100)
+        self.tile = np.abs(self.mID) % 100
+        self.row = np.abs(mID) % 100 // 2 + 1
         self.nMip = np.where(self.status_is_good, self.mnMip, 0)
+
+        print(self.mID[0])
+        print(self.mID[0] % 100)
+        print(self.row[0])
+
+
+    # TODO Parallelize? Verify?
+    def generate_epd_hit_matrix(self, lower_bound = 0.2, upper_bound = 3):
+        ring_sum = np.zeros((16, len(self.nMip)))
+        print("Filling array of dimension", ring_sum.shape)
+        for i in range(len(self.nMip)):
+            for j in range(len(self.nMip[i])):
+                # print(self.row[i][j] - 1)
+                addition = self.nMip[i][j]
+                if addition < lower_bound:
+                    addition = 0
+                if addition > upper_bound:
+                    addition = upper_bound
+                ring_sum[self.row[i][j] - 1][i] += addition
+        return ring_sum
 
 
 
@@ -177,15 +199,15 @@ class PicoDST:
 
             # Load EPD Data
             # I am worried about flattening this data, I need to understand the structure better to figure out how to keep events associated properly
-            epd_hit_id_data = ak.to_numpy(ak.flatten(data["EpdHit"]["EpdHit.mId"].array()))
-            epd_hit_mQTdata = ak.to_numpy(ak.flatten(data["EpdHit"]["EpdHit.mQTdata"].array()))
-            epd_hit_mnMIP   = ak.to_numpy(ak.flatten(data["EpdHit"]["EpdHit.mnMIP"].array()))
+            epd_hit_id_data = data["EpdHit"]["EpdHit.mId"].array()
+            epd_hit_mQTdata = data["EpdHit"]["EpdHit.mQTdata"].array()
+            epd_hit_mnMIP   = data["EpdHit"]["EpdHit.mnMIP"].array()
             self.epd_hits = EPD_Hits(epd_hit_id_data, epd_hit_mQTdata, epd_hit_mnMIP)
 
             # print("PicoDst " + data_in[-13:-5] + " loaded.")
 
-        except ValueError:  # Skip empty picos.
-            print("ValueError at: " + data_in)  # Identifies the misbehaving file.
+        # except ValueError:  # Skip empty picos.
+        #     print("ValueError at: " + data_in)  # Identifies the misbehaving file.
         except KeyError:  # Skip non empty picos that have no data.
             print("KeyError at: " + data_in)  # Identifies the misbehaving file.
 
