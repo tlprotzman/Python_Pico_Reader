@@ -35,6 +35,58 @@ def rapidity(p_z):
     y = np.multiply(np.log(np.divide(e_p, e_m)), 1/2)
     return y
 
+class EPD_Hits:
+    mID = None
+    mQT_data = None
+    mnMip = None
+
+    position = None          # Supersector position on wheel [1, 12]
+    tile = None              # Tile number on the Supersector [1, 31]
+    row = None               # Row Number [1, 16]
+    EW = None                # -1 for East wheel, +1 for West wheel
+    ADC = None               # ADC Value reported by QT board [0, 4095]
+    TAC = None               # TAC value reported by QT board[0, 4095]
+    TDC = None               # TDC value reported by QT board[0, 32]
+    has_TAC = None           # channel has a TAC
+    nMip = None              # gain calibrated signal, energy loss in terms of MPV of Landau for a MIP, might be an int, need to check.
+    status_is_good = None    # good status, according to database
+
+    def __init__(self, mID, mQT_data, mnMips):
+        self.mID = mID
+        self.mQT_data = mQT_data
+        self.mnMip = mnMips
+
+        self.has_TAC = np.bitwise_and(np.right_shift(self.mQT_data, 29), 0x1)
+        self.status_is_good = np.bitwise_and(np.right_shift(self.mQT_data, 30),  0x1)
+
+        self.adc = np.bitwise_and(self.mQT_data, 0x0FFF)
+        self.tac = np.bitwise_and(np.right_shift(self.mQT_data, 12), 0x0FFF)
+        self.TDC = np.bitwise_and(np.right_shift(self.mQT_data, 24), 0x001F)
+
+        self.EW = np.sign(self.mID)
+        self.position = np.abs(self.mID // 100)
+        self.tile = np.abs(self.mID) % 100
+        self.row = np.abs(mID) % 100 // 2 + 1
+        self.nMip = np.where(self.status_is_good, self.mnMip, 0)
+
+
+    # TODO Parallelize?
+    def generate_epd_hit_matrix(self, lower_bound = 0.2, upper_bound = 3):
+        ring_sum = np.zeros((16, len(self.nMip)))
+        print("Filling array of dimension", ring_sum.shape)
+        for i in range(len(self.nMip)):
+            for j in range(len(self.nMip[i])):
+                # print(self.row[i][j] - 1)
+                addition = self.nMip[i][j]
+                if addition < lower_bound:
+                    addition = 0
+                if addition > upper_bound:
+                    addition = upper_bound
+                ring_sum[self.row[i][j] - 1][i] += addition
+        return ring_sum
+
+
+
 
 class PicoDST:
     """This class makes the PicoDST from the root file, along with
@@ -44,6 +96,7 @@ class PicoDST:
         """This defines the variables we'll be using
         in the class."""
         self.data: bool
+        self.num_events = None
         self.v_x = None
         self.v_y = None
         self.v_z = None
@@ -73,6 +126,9 @@ class PicoDST:
         self.dedx_histo = None
         self.p_g_histo = None
         self.charge_histo = None
+        self.epd_hits = None
+
+
         if data_file is not None:
             self.import_data(data_file)
 
@@ -85,6 +141,7 @@ class PicoDST:
             data_in (str): The path to the picoDst ROOT file"""
         try:
             data = up.open(data_in)["PicoDst"]
+            self.num_events = len(data["Event"]["Event.mPrimaryVertexX"].array())
             # Make vertices
             self.v_x = ak.to_numpy(ak.flatten(data["Event"]["Event.mPrimaryVertexX"].array()))
             self.v_y = ak.to_numpy(ak.flatten(data["Event"]["Event.mPrimaryVertexY"].array()))
@@ -138,10 +195,17 @@ class PicoDST:
             o_y = data["Track"]["Track.mOriginY"].array()
             self.phi = np.arctan2(o_y, o_x)
 
+            # Load EPD Data
+            # I am worried about flattening this data, I need to understand the structure better to figure out how to keep events associated properly
+            epd_hit_id_data = data["EpdHit"]["EpdHit.mId"].array()
+            epd_hit_mQTdata = data["EpdHit"]["EpdHit.mQTdata"].array()
+            epd_hit_mnMIP   = data["EpdHit"]["EpdHit.mnMIP"].array()
+            self.epd_hits = EPD_Hits(epd_hit_id_data, epd_hit_mQTdata, epd_hit_mnMIP)
+
             # print("PicoDst " + data_in[-13:-5] + " loaded.")
 
-        except ValueError:  # Skip empty picos.
-            print("ValueError at: " + data_in)  # Identifies the misbehaving file.
+        # except ValueError:  # Skip empty picos.
+        #     print("ValueError at: " + data_in)  # Identifies the misbehaving file.
         except KeyError:  # Skip non empty picos that have no data.
             print("KeyError at: " + data_in)  # Identifies the misbehaving file.
 
