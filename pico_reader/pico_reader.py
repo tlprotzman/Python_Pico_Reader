@@ -235,3 +235,19 @@ class PicoDST:
                       self.rapidity, self.nhitsmax, self.nsigma_proton, self.tofpid,
                       self.epd_hits.nMip, self.epd_hits.row)
         
+
+class Event_Cuts():
+    def __init__(self, events, criteria):
+        self.events = events
+        self.mask = self.generate_mask(criteria)
+        for attr in [a for a in dir(PicoDST) if not a.startswith('__') and not callable(getattr(PicoDST, a))]:
+            setattr(self, attr, getattr(self.events, attr)[self.mask])
+        self.num_events = events.num_events - int(np.sum(self.mask))
+        
+    def generate_mask(self, criteria, mask=None):
+        if mask is None:
+            mask = np.zeros(self.events.num_events)
+        for i in range(self.events.num_events):
+            if not criteria(self.events, i):
+                mask[i] = 1
+        return mask
