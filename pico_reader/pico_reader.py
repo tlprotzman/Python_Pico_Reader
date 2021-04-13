@@ -202,21 +202,36 @@ class PicoDST:
         except KeyError:  # Skip non empty picos that have no data.
             print("KeyError at: " + data_in)  # Identifies the misbehaving file.
 
-    def event_cuts(self, v_r_cut=2.0, v_z_cut=30.0, tofmult_refmult=np.array([[2.536, 200], [1.352, -54.08]]),
-                   tofmatch_refmult=np.array([0.239, -14.34]), beta_refmult=np.array([0.447, -17.88])):
-        """This is used to make event cuts.
-        """
-        index = ((np.absolute(self.v_z) <= v_z_cut) & (self.v_r <= v_r_cut) &
-                 (self.tofmult <= (np.multiply(tofmult_refmult[0][0], self.refmult3) + tofmult_refmult[0][1])) &
+    def vertex_cuts(self, v_r_cut=2.0, v_z_cut=30.0):
+        index = ((np.absolute(self.v_z) <= v_z_cut) & (self.v_r <= v_r_cut))
+        self.v_x, self.v_y, self.v_z, self.v_r, self.refmult3, self.tofmult, \
+            self.tofmatch, self.bete_eta_1, self.p_t, self.p_g, self.phi, self.dca, \
+            self.eta, self.nhitsfit, self.nhitsdedx, self.m_2, self.charge, self.beta, \
+            self.dedx, self.zdcx, self.rapidity, self.nhitsmax, self.nsigma_proton, \
+            self.tofpid, self.epd_hits.nMip, self.epd_hits.row = \
+            index_cut(index, self.v_x, self.v_y, self.v_z, self.v_r, self.refmult3,
+                      self.tofmult, self.tofmatch, self.bete_eta_1, self.p_t, self.p_g,
+                      self.phi, self.dca, self.eta, self.nhitsfit, self.nhitsdedx,
+                      self.m_2, self.charge, self.beta, self.dedx, self.zdcx,
+                      self.rapidity, self.nhitsmax, self.nsigma_proton, self.tofpid,
+                      self.epd_hits.nMip, self.epd_hits.row)
+
+    def refmult_correlation_cuts(self, tofmult_refmult=np.array([[2.536, 200], [1.352, -54.08]]),
+                                 tofmatch_refmult=np.array([0.239, -14.34]),
+                                 beta_refmult=np.array([0.447, -17.88])):
+        index = ((self.tofmult <= (np.multiply(tofmult_refmult[0][0], self.refmult3) + tofmult_refmult[0][1])) &
                  (self.tofmult >= (np.multiply(tofmult_refmult[1][0], self.refmult3) + tofmult_refmult[1][1])) &
                  (self.tofmatch >= (np.multiply(tofmatch_refmult[0], self.refmult3) + tofmatch_refmult[1])) &
                  (self.bete_eta_1 >= (np.multiply(beta_refmult[0], self.refmult3) + beta_refmult[1])))
-
-        self.v_x, self.v_y, self.v_z, self.v_r, self.refmult3, self.tofmult, self.tofmatch, self.bete_eta_1, \
-            self.p_t, self.p_g, self.phi, self.dca, self.eta, self.nhitsfit, self.nhitsdedx, self.m_2, \
-            self.charge, self.beta, self.dedx, self.zdcx, self.rapidity, self.nhitsmax, self.nsigma_proton, \
-            self.tofpid = \
-            index_cut(index, self.v_x, self.v_y, self.v_z, self.v_r, self.refmult3, self.tofmult, self.tofmatch,
-                      self.bete_eta_1, self.p_t, self.p_g, self.phi, self.dca, self.eta, self.nhitsfit,
-                      self.nhitsdedx, self.m_2, self.charge, self.beta, self.dedx, self.zdcx, self.rapidity,
-                      self.nhitsmax, self.nsigma_proton, self.tofpid)
+        self.v_x, self.v_y, self.v_z, self.v_r, self.refmult3, self.tofmult, \
+            self.tofmatch, self.bete_eta_1, self.p_t, self.p_g, self.phi, self.dca, \
+            self.eta, self.nhitsfit, self.nhitsdedx, self.m_2, self.charge, self.beta, \
+            self.dedx, self.zdcx, self.rapidity, self.nhitsmax, self.nsigma_proton, \
+            self.tofpid, self.epd_hits.nMip, self.epd_hits.row = \
+            index_cut(index, self.v_x, self.v_y, self.v_z, self.v_r, self.refmult3,
+                      self.tofmult, self.tofmatch, self.bete_eta_1, self.p_t, self.p_g,
+                      self.phi, self.dca, self.eta, self.nhitsfit, self.nhitsdedx,
+                      self.m_2, self.charge, self.beta, self.dedx, self.zdcx,
+                      self.rapidity, self.nhitsmax, self.nsigma_proton, self.tofpid,
+                      self.epd_hits.nMip, self.epd_hits.row)
+        
