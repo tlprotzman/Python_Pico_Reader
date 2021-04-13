@@ -35,6 +35,7 @@ def rapidity(p_z):
     y = np.multiply(np.log(np.divide(e_p, e_m)), 1/2)
     return y
 
+
 class EPD_Hits:
     mID = None
     mQT_data = None
@@ -69,7 +70,6 @@ class EPD_Hits:
         self.row = np.abs(mID) % 100 // 2 + 1
         self.nMip = np.where(self.status_is_good, self.mnMip, 0)
 
-
     # TODO Parallelize?
     def generate_epd_hit_matrix(self, lower_bound = 0.2, upper_bound = 3):
         ring_sum = np.zeros((16, len(self.nMip)))
@@ -84,8 +84,6 @@ class EPD_Hits:
                     addition = upper_bound
                 ring_sum[self.row[i][j] - 1][i] += addition
         return ring_sum
-
-
 
 
 class PicoDST:
