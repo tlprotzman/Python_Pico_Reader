@@ -1,7 +1,7 @@
 #
 # \PicoDst reader for Python
 #
-# \author Skipper KAgamaster
+# \author Skipper Kagamaster
 # \date 03/19/2021
 # \email skk317@lehigh.edu
 # \affiliation Lehigh University
