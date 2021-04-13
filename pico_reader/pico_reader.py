@@ -69,12 +69,8 @@ class EPD_Hits:
         self.row = np.abs(mID) % 100 // 2 + 1
         self.nMip = np.where(self.status_is_good, self.mnMip, 0)
 
-        print(self.mID[0])
-        print(self.mID[0] % 100)
-        print(self.row[0])
 
-
-    # TODO Parallelize? Verify?
+    # TODO Parallelize?
     def generate_epd_hit_matrix(self, lower_bound = 0.2, upper_bound = 3):
         ring_sum = np.zeros((16, len(self.nMip)))
         print("Filling array of dimension", ring_sum.shape)
@@ -100,6 +96,7 @@ class PicoDST:
         """This defines the variables we'll be using
         in the class."""
         self.data: bool
+        self.num_events = None
         self.v_x = None
         self.v_y = None
         self.v_z = None
@@ -144,6 +141,7 @@ class PicoDST:
             data_in (str): The path to the picoDst ROOT file"""
         try:
             data = up.open(data_in)["PicoDst"]
+            self.num_events = len(data["Event"]["Event.mPrimaryVertexX"].array())
             # Make vertices
             self.v_x = ak.to_numpy(ak.flatten(data["Event"]["Event.mPrimaryVertexX"].array()))
             self.v_y = ak.to_numpy(ak.flatten(data["Event"]["Event.mPrimaryVertexY"].array()))
