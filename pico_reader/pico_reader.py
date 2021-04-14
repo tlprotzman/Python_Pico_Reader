@@ -240,7 +240,13 @@ class Event_Cuts:
     """
     Event_Cuts takes an object of events and applys the criteria function to it 
     to determin acceptable events.  They can then be accessed in the same way as
-    a typical Pico_DST object
+    a typical Pico_DST object.
+
+    The criteria function must accept a object of events and the event index as the parameters.
+    A typical function might be:
+    
+    def basic_filter_1cm(events, index):
+        return events.v_r[index] < 1  # Only get events within 1 cm of center
     """
     def __init__(self, events, criteria=None, mask=None):
         self.events = events
