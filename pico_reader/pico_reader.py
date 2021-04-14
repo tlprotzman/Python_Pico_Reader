@@ -240,14 +240,17 @@ class Event_Cuts():
     def __init__(self, events, criteria):
         self.events = events
         self.mask = self.generate_mask(criteria)
-        for attr in [a for a in dir(PicoDST) if not a.startswith('__') and not callable(getattr(PicoDST, a))]:
-            setattr(self, attr, getattr(self.events, attr)[self.mask])
         self.num_events = events.num_events - int(np.sum(self.mask))
+        # print(self.mask)
         
     def generate_mask(self, criteria, mask=None):
         if mask is None:
-            mask = np.zeros(self.events.num_events)
+            mask = np.zeros(self.events.num_events, dtype=np.bool)
         for i in range(self.events.num_events):
             if not criteria(self.events, i):
-                mask[i] = 1
+                mask[i] = True
         return mask
+
+    def __getattr__(self, name):
+        array = getattr(self.events, name)[~self.mask]
+        return array
