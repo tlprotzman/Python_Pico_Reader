@@ -236,21 +236,33 @@ class PicoDST:
                       self.epd_hits.nMip, self.epd_hits.row)
         
 
-class Event_Cuts():
-    def __init__(self, events, criteria):
+class Event_Cuts:
+    """
+    Event_Cuts takes an object of events and applys the criteria function to it 
+    to determin acceptable events.  They can then be accessed in the same way as
+    a typical Pico_DST object
+    """
+    def __init__(self, events, criteria=None, mask=None):
         self.events = events
-        self.mask = self.generate_mask(criteria)
-        self.num_events = events.num_events - int(np.sum(self.mask))
+        self.mask = mask    # Sometimes we want to use the same mask
+        if self.mask is None:
+            self.mask = self.generate_mask(criteria)
+        self.num_events = int(np.sum(self.mask))
         # print(self.mask)
         
     def generate_mask(self, criteria, mask=None):
+        """
+        generate_mask applies the criteria function to each event to determin if it is acceptable
+        """
         if mask is None:
             mask = np.zeros(self.events.num_events, dtype=np.bool)
         for i in range(self.events.num_events):
-            if not criteria(self.events, i):
+            if criteria(self.events, i):
                 mask[i] = True
         return mask
 
     def __getattr__(self, name):
-        array = getattr(self.events, name)[~self.mask]
+        if name == "epd_hits":  # Create an new event cut object for EPD data
+            return Event_Cuts(self.events.epd_hits, mask=self.mask)
+        array = getattr(self.events, name)[self.mask]   # Return a filterd array, a new copy
         return array

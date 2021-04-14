@@ -14,10 +14,18 @@ def basic_filter_2cm(events, index):
 
 print(max(pr.v_r))
 
-cut_events_1cm = pico_reader.Event_Cuts(pr, basic_filter_1cm)
-cut_events_2cm = pico_reader.Event_Cuts(pr, basic_filter_2cm)
+cut_events_1cm = pico_reader.Event_Cuts(pr, criteria=basic_filter_1cm)
+cut_events_2cm = pico_reader.Event_Cuts(pr, criteria=basic_filter_2cm)
 print("From", pr.num_events, ",", cut_events_1cm.num_events, "events have v_r < 1 cm")
 print("From", pr.num_events, ",", cut_events_2cm.num_events, "events have v_r < 2 cm")
 
+print("Events with v_r < 1 cm:")
 print(cut_events_1cm.v_r)
-print(len(cut_events_1cm.v_r))
+print("The East/West Variable for acceptable events")
+print(cut_events_1cm.epd_hits.EW)
+print("The number of events left in the E/W display, should be equal to the number of events \
+with a v_r < 1 cm")
+print(len(cut_events_1cm.epd_hits.EW))
+# Testing taking sum of cut events
+print("testing numpy functions on cut events")
+print(np.sum(cut_events_1cm.epd_hits.EW))
